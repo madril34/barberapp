@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gestionar Citas</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+  <div class="container mt-5">
+    <h2>Gestionar Citas</h2>
+    <table class="table table-bordered mt-3">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Cliente</th>
+          <th>Fecha</th>
+          <th>Hora</th>
+          <th>Servicio</th>
+          <th>Barbero</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-citas"></tbody>
+    </table>
+  </div>
+
+  <script>
+    async function cargarCitas() {
+      const res = await fetch('/citas/ver');
+      const citas = await res.json();
+      const tabla = document.getElementById('tabla-citas');
+      tabla.innerHTML = '';
+
+      citas.forEach(cita => {
+        tabla.innerHTML += `
+          <tr>
+            <td>${cita.id}</td>
+            <td>${cita.cliente_id}</td>
+            <td>${cita.fecha}</td>
+            <td>${cita.hora}</td>
+            <td>${cita.servicio}</td>
+            <td>${cita.barbero}</td>
+            <td>${cita.estado}</td>
+            <td>
+              <button onclick="eliminarCita(${cita.id})" class="btn btn-danger btn-sm">Eliminar</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    async function eliminarCita(id) {
+      if (confirm('¿Estás seguro de eliminar esta cita?')) {
+        await fetch(`/citas/eliminar/${id}`, { method: 'DELETE' });
+        cargarCitas();
+      }
+    }
+
+    window.onload = cargarCitas;
+  </script>
+</body>
+</html>

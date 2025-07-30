@@ -1,0 +1,32 @@
+<script>
+  fetch("/api/citas/todas")
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Error al obtener las citas');
+      }
+      return response.json();
+    })
+    .then(data => {
+      const tabla = document.querySelector("tbody");
+      data.forEach(cita => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${cita.id}</td>
+          <td>${cita.nombre}</td>
+          <td>${cita.fecha}</td>
+          <td>${cita.hora}</td>
+          <td>${cita.servicio}</td>
+          <td>${cita.barbero}</td>
+          <td>${cita.estado || 'pendiente'}</td>
+        `;
+        tabla.appendChild(fila);
+      });
+    })
+    .catch(error => {
+      console.error(error);
+      document.getElementById("mensaje-error").classList.remove("d-none");
+    });
+</script>
+
+
+
