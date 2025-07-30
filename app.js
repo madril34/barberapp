@@ -1,4 +1,3 @@
-// app.js
 const express = require('express');
 const path = require('path');
 const app = express();
@@ -27,13 +26,19 @@ app.get('/contacto', (req, res) => {
 app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'login.html'));
 });
+app.get('/registro', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'registro.html'));
+});
 app.get('/ver-citas', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'ver-citas.html'));
 });
 
-// Importar rutas API para citas
+// Importar rutas API para citas y usuarios
 const citaRoutes = require('./routes/citaRoutes');
+const usuarioRoutes = require('./routes/usuarioRoutes');
+
 app.use('/api/citas', citaRoutes);
+app.use('/api/usuarios', usuarioRoutes);
 
 // Iniciar servidor
 app.listen(PORT, () => {
