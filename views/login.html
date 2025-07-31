@@ -19,30 +19,30 @@
 
     <form id="formLogin" novalidate>
       <div class="mb-3">
-        <label for="email" class="form-label">Correo electrónico</label>
+        <label for="correo" class="form-label">Correo electrónico</label>
         <input
           type="email"
           class="form-control"
-          id="email"
-          name="email"
+          id="correo"
+          name="correo"
           required
           placeholder="correo@ejemplo.com"
         />
       </div>
 
       <div class="mb-3">
-        <label for="contrasena" class="form-label">Contraseña</label>
+        <label for="contraseña" class="form-label">Contraseña</label>
         <input
           type="password"
           class="form-control"
-          id="contrasena"
-          name="contrasena"
+          id="contraseña"
+          name="contraseña"
           required
           placeholder="Tu contraseña"
         />
       </div>
 
-      <button type="submit" class="btn btn-primary">Ingresar</button>
+      <button type="submit" class="btn btn-primary w-100">Ingresar</button>
     </form>
   </main>
 
@@ -69,21 +69,26 @@
       const formData = new FormData(form);
       const datos = Object.fromEntries(formData.entries());
 
-      const respuesta = await fetch('/api/usuarios/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datos)
-      });
+      try {
+        const respuesta = await fetch('/api/usuarios/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(datos),
+        });
 
-      const resultado = await respuesta.json();
+        const resultado = await respuesta.json();
 
-      if (respuesta.ok) {
-        mostrarAlerta('Inicio de sesión exitoso. Redirigiendo...', 'success');
-        setTimeout(() => {
-          window.location.href = '/'; // Puedes cambiar esto a tu página principal
-        }, 2000);
-      } else {
-        mostrarAlerta('Credenciales inválidas o error de servidor');
+        if (respuesta.ok) {
+          mostrarAlerta('Inicio de sesión exitoso. Redirigiendo...', 'success');
+          setTimeout(() => {
+            window.location.href = '/agendar';
+          }, 1500);
+        } else {
+          mostrarAlerta(resultado.error || 'Usuario o contraseña incorrectos');
+        }
+      } catch (error) {
+        mostrarAlerta('Error en la comunicación con el servidor');
+        console.error(error);
       }
     });
   </script>

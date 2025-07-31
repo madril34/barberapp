@@ -131,13 +131,13 @@
       >
         <form id="login-form" novalidate>
           <div class="mb-3">
-            <label for="login-usuario" class="form-label">Usuario</label>
+            <label for="login-usuario" class="form-label">Correo electrónico</label>
             <input
-              type="text"
+              type="email"
               class="form-control"
               id="login-usuario"
-              name="usuario"
-              placeholder="Ingresa tu usuario"
+              name="correo"
+              placeholder="Ingresa tu correo"
               required
             />
           </div>
@@ -148,7 +148,7 @@
               type="password"
               class="form-control"
               id="login-contrasena"
-              name="contrasena"
+              name="contraseña"
               placeholder="Ingresa tu contraseña"
               required
             />
@@ -172,13 +172,13 @@
       >
         <form id="register-form" novalidate>
           <div class="mb-3">
-            <label for="register-usuario" class="form-label">Usuario</label>
+            <label for="register-usuario" class="form-label">Nombre completo</label>
             <input
               type="text"
               class="form-control"
               id="register-usuario"
-              name="usuario"
-              placeholder="Elige un usuario"
+              name="nombre"
+              placeholder="Tu nombre completo"
               required
             />
           </div>
@@ -189,7 +189,7 @@
               type="email"
               class="form-control"
               id="register-email"
-              name="email"
+              name="correo"
               placeholder="Tu correo electrónico"
               required
             />
@@ -201,7 +201,7 @@
               type="password"
               class="form-control"
               id="register-contrasena"
-              name="contrasena"
+              name="contraseña"
               placeholder="Elige una contraseña"
               required
             />
@@ -254,51 +254,81 @@
     const registerError = document.getElementById('register-error');
     const registerSuccess = document.getElementById('register-success');
 
-    // Simulación de usuarios para demo (en el backend tendrás que manejar esto)
-    const usuariosDemo = [{ usuario: 'admin', contrasena: '1234' }];
-
-    loginForm.addEventListener('submit', (e) => {
+    loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const usuario = loginForm.usuario.value.trim();
-      const contrasena = loginForm.contrasena.value.trim();
+      loginError.style.display = 'none';
 
-      const usuarioEncontrado = usuariosDemo.find(
-        (u) => u.usuario === usuario && u.contrasena === contrasena
-      );
+      const correo = loginForm.correo.value.trim();
+      const contraseña = loginForm.contraseña.value.trim();
 
-      if (usuarioEncontrado) {
-        // Login correcto
-        window.location.href = '/agendar';
-      } else {
+      if (!correo || !contraseña) {
         loginError.style.display = 'block';
-        loginError.textContent = 'Usuario o contraseña incorrectos';
+        loginError.textContent = 'Por favor, completa todos los campos.';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/usuarios/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ correo, contraseña }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          // Redirigir al usuario a agendar después de login exitoso
+          window.location.href = '/agendar';
+        } else {
+          loginError.style.display = 'block';
+          loginError.textContent = data.error || 'Error al iniciar sesión.';
+        }
+      } catch (error) {
+        loginError.style.display = 'block';
+        loginError.textContent = 'Error de conexión al servidor.';
       }
     });
 
-    registerForm.addEventListener('submit', (e) => {
+    registerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const usuario = registerForm.usuario.value.trim();
-      const email = registerForm.email.value.trim();
-      const contrasena = registerForm.contrasena.value.trim();
+      registerError.style.display = 'none';
+      registerSuccess.style.display = 'none';
 
-      if (!usuario || !email || !contrasena) {
+      const nombre = registerForm.nombre.value.trim();
+      const correo = registerForm.correo.value.trim();
+      const contraseña = registerForm.contraseña.value.trim();
+
+      if (!nombre || !correo || !contraseña) {
         registerError.style.display = 'block';
         registerError.textContent = 'Por favor, completa todos los campos.';
         return;
       }
 
-      // Aquí puedes hacer llamada a backend para guardar usuario
-      // Demo: Solo simulo que el registro fue exitoso
+      try {
+        const res = await fetch('/api/usuarios/registro', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nombre, correo, contraseña }),
+        });
 
-      usuariosDemo.push({ usuario, contrasena });
-      registerError.style.display = 'none';
-      registerSuccess.style.display = 'block';
-      registerSuccess.textContent = 'Usuario registrado con éxito. Ahora podés iniciar sesión.';
+        const data = await res.json();
 
-      registerForm.reset();
+        if (res.ok) {
+          registerSuccess.style.display = 'block';
+          registerSuccess.textContent = 'Registro exitoso. Ya puedes iniciar sesión.';
+          registerForm.reset();
+        } else {
+          registerError.style.display = 'block';
+          registerError.textContent = data.error || 'Error al registrarse.';
+        }
+      } catch (error) {
+        registerError.style.display = 'block';
+        registerError.textContent = 'Error de conexión al servidor.';
+      }
     });
   </script>
 </body>
 </html>
+

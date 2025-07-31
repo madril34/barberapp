@@ -1,80 +1,84 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcryptjs'); // <--- AÑADIDO: Importamos bcryptjs
 const pool = require('../config/db');
 
-// ==============================
-// INICIAR SESIÓN
-// ==============================
+// Registro de usuario
+router.post('/registro', async (req, res) => {
+  try {
+    const { nombre, correo, contraseña } = req.body;
+    if (!nombre || !correo || !contraseña) {
+      return res.status(400).json({ error: 'Faltan datos obligatorios' });
+    }
+
+    const [existingUser] = await pool.query('SELECT * FROM usuarios WHERE correo = ?', [correo]);
+    if (existingUser.length > 0) {
+      return res.status(409).json({ error: 'El correo ya está registrado' });
+    }
+
+    const [result] = await pool.query(
+      'INSERT INTO usuarios (nombre, correo, contraseña, rol) VALUES (?, ?, ?, ?)',
+      [nombre, correo, contraseña, 'cliente']
+    );
+
+    res.status(201).json({ mensaje: 'Usuario registrado con éxito', id: result.insertId });
+  } catch (error) {
+    res.status(500).json({ error: 'Error en la base de datos' });
+  }
+});
+
+// Login de usuario
 router.post('/login', async (req, res) => {
   try {
     const { correo, contraseña } = req.body;
-
     if (!correo || !contraseña) {
       return res.status(400).json({ error: 'Faltan datos obligatorios' });
     }
 
     const [rows] = await pool.query('SELECT * FROM usuarios WHERE correo = ?', [correo]);
     if (rows.length === 0) {
-      // Por seguridad, es mejor no decir "Usuario no encontrado".
-      return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+      return res.status(401).json({ error: 'Usuario no encontrado' });
     }
 
     const usuario = rows[0];
-
-    // **CORRECCIÓN:** Usamos bcrypt.compare para comparar la contraseña hasheada
-    const contrasenaValida = await bcrypt.compare(contraseña, usuario.contraseña);
-
-    if (!contrasenaValida) {
+    if (usuario.contraseña !== contraseña) {
       return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
     }
 
-    // Login exitoso
+    // Guardar usuario en sesión
+    req.session.usuario = {
+      id: usuario.id,
+      nombre: usuario.nombre,
+      correo: usuario.correo,
+      rol: usuario.rol,
+    };
+
     res.json({
-      mensaje: 'Inicio de sesión exitoso',
-      usuario: {
-        id: usuario.id,
-        nombre: usuario.nombre,
-        correo: usuario.correo,
-        rol: usuario.rol
-      }
+      mensaje: 'Login exitoso',
+      usuario: req.session.usuario,
     });
   } catch (error) {
-    console.error('Error en login:', error);
-    res.status(500).json({ error: 'Error del servidor' });
+    res.status(500).json({ error: 'Error en la base de datos' });
   }
 });
 
-// ==============================
-// REGISTRAR NUEVO USUARIO
-// ==============================
-router.post('/registro', async (req, res) => {
-  try {
-    const { nombre, correo, contraseña } = req.body;
-
-    if (!nombre || !correo || !contraseña) {
-      return res.status(400).json({ error: 'Faltan datos obligatorios' });
+// Logout de usuario
+router.post('/logout', (req, res) => {
+  req.session.destroy(err => {
+    if (err) {
+      return res.status(500).json({ error: 'No se pudo cerrar sesión' });
     }
+    res.json({ mensaje: 'Sesión cerrada correctamente' });
+  });
+});
 
-    const [existe] = await pool.query('SELECT * FROM usuarios WHERE correo = ?', [correo]);
-    if (existe.length > 0) {
-      return res.status(409).json({ error: 'Correo ya registrado' });
-    }
-
-    // **CORRECCIÓN:** Hasheamos la contraseña antes de guardarla
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(contraseña, salt);
-
-    const [resultado] = await pool.query(
-      'INSERT INTO usuarios (nombre, correo, contraseña, rol) VALUES (?, ?, ?, ?)',
-      [nombre, correo, hashedPassword, 'cliente'] // Guardamos la contraseña hasheada
-    );
-
-    res.status(201).json({ mensaje: 'Usuario registrado correctamente', id: resultado.insertId });
-  } catch (error) {
-    console.error('Error en registro:', error);
-    res.status(500).json({ error: 'Error del servidor' });
+// Ruta para verificar sesión activa (opcional)
+router.get('/sesion-activa', (req, res) => {
+  if (req.session.usuario) {
+    res.json({ usuario: req.session.usuario });
+  } else {
+    res.status(401).json({ error: 'No hay sesión activa' });
   }
 });
 
 module.exports = router;
+
