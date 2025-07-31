@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Login | BarberApp</title>
+  <title>Iniciar Sesión | BarberApp</title>
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
     rel="stylesheet"
@@ -14,83 +14,76 @@
     <h1 class="text-center">Iniciar Sesión</h1>
   </header>
 
-  <main class="container mt-4" style="max-width: 400px;">
-    <form id="loginForm" novalidate>
+  <main class="container mt-4">
+    <div id="alert-container"></div>
+
+    <form id="formLogin" novalidate>
       <div class="mb-3">
-        <label for="correo" class="form-label">Correo electrónico</label>
+        <label for="email" class="form-label">Correo electrónico</label>
         <input
           type="email"
           class="form-control"
-          id="correo"
-          name="correo"
+          id="email"
+          name="email"
           required
-          placeholder="Tu correo electrónico"
+          placeholder="correo@ejemplo.com"
         />
       </div>
+
       <div class="mb-3">
-        <label for="contraseña" class="form-label">Contraseña</label>
+        <label for="contrasena" class="form-label">Contraseña</label>
         <input
           type="password"
           class="form-control"
-          id="contraseña"
-          name="contraseña"
+          id="contrasena"
+          name="contrasena"
           required
           placeholder="Tu contraseña"
         />
       </div>
 
-      <div id="alertPlaceholder"></div>
-
-      <button type="submit" class="btn btn-primary w-100">Ingresar</button>
+      <button type="submit" class="btn btn-primary">Ingresar</button>
     </form>
   </main>
 
   <script>
-    const form = document.getElementById('loginForm');
-    const alertPlaceholder = document.getElementById('alertPlaceholder');
+    const form = document.getElementById('formLogin');
+    const alertContainer = document.getElementById('alert-container');
 
-    function showAlert(message, type = 'danger') {
-      alertPlaceholder.innerHTML = `
-        <div class="alert alert-${type} alert-dismissible fade show mt-3" role="alert">
-          ${message}
+    function mostrarAlerta(mensaje, tipo = 'danger') {
+      alertContainer.innerHTML = `
+        <div class="alert alert-${tipo} alert-dismissible fade show" role="alert">
+          ${mensaje}
           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-        </div>`;
+        </div>
+      `;
+      setTimeout(() => {
+        const alerta = alertContainer.querySelector('.alert');
+        if (alerta) alerta.classList.remove('show');
+      }, 3000);
     }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      alertPlaceholder.innerHTML = '';
 
-      const correo = form.correo.value.trim();
-      const contraseña = form.contraseña.value.trim();
+      const formData = new FormData(form);
+      const datos = Object.fromEntries(formData.entries());
 
-      if (!correo || !contraseña) {
-        showAlert('Por favor, completa todos los campos.');
-        return;
-      }
+      const respuesta = await fetch('/api/usuarios/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datos)
+      });
 
-      try {
-        const response = await fetch('/api/usuarios/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ correo, contraseña })
-        });
+      const resultado = await respuesta.json();
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          showAlert(data.error || 'Error en el login');
-          return;
-        }
-
-        // Guardar info usuario en localStorage para usar luego
-        localStorage.setItem('usuario', JSON.stringify(data.usuario));
-
-        // Redirigir a ver citas o página principal
-        window.location.href = '/ver-citas';
-      } catch (error) {
-        showAlert('Error de conexión. Intenta nuevamente.');
-        console.error(error);
+      if (respuesta.ok) {
+        mostrarAlerta('Inicio de sesión exitoso. Redirigiendo...', 'success');
+        setTimeout(() => {
+          window.location.href = '/'; // Puedes cambiar esto a tu página principal
+        }, 2000);
+      } else {
+        mostrarAlerta('Credenciales inválidas o error de servidor');
       }
     });
   </script>

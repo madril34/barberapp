@@ -2,6 +2,14 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 
+// Middleware para verificar sesión activa
+function verificarSesion(req, res, next) {
+  if (!req.session.usuario) {
+    return res.status(401).json({ error: 'Debes iniciar sesión' });
+  }
+  next();
+}
+
 // Obtener todas las citas con nombre del cliente
 router.get('/todas', (req, res) => {
   const sql = `
@@ -18,10 +26,17 @@ router.get('/todas', (req, res) => {
   });
 });
 
-// Agendar cita (usa cliente_id)
-router.post('/agendar', (req, res) => {
-  const { cliente_id, fecha, hora, servicio, barbero } = req.body;
+// Agendar cita (solo usuario logueado)
+router.post('/agendar', verificarSesion, (req, res) => {
+  const { fecha, hora, servicio, barbero } = req.body;
   const estado = 'pendiente';
+
+  // Tomar cliente_id de la sesión
+  const cliente_id = req.session.usuario.id;
+
+  if (!fecha || !hora || !servicio || !barbero) {
+    return res.status(400).json({ error: 'Faltan datos obligatorios' });
+  }
 
   const sql = 'INSERT INTO citas (cliente_id, fecha, hora, servicio, barbero, estado) VALUES (?, ?, ?, ?, ?, ?)';
   const values = [cliente_id, fecha, hora, servicio, barbero, estado];
@@ -35,7 +50,7 @@ router.post('/agendar', (req, res) => {
   });
 });
 
-// Eliminar cita
+// Eliminar cita (opcional: también puedes validar que solo el dueño la elimine)
 router.delete('/eliminar/:id', (req, res) => {
   const { id } = req.params;
   pool.query('DELETE FROM citas WHERE id = ?', [id], (error, results) => {
@@ -51,3 +66,5 @@ router.delete('/eliminar/:id', (req, res) => {
 });
 
 module.exports = router;
+
+

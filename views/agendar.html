@@ -20,18 +20,6 @@
 
     <form id="formCita" novalidate>
       <div class="mb-3">
-        <label for="nombre" class="form-label">Nombre completo</label>
-        <input
-          type="text"
-          class="form-control"
-          id="nombre"
-          name="nombre"
-          required
-          placeholder="Tu nombre completo"
-        />
-      </div>
-
-      <div class="mb-3">
         <label for="fecha" class="form-label">Fecha</label>
         <input
           type="date"
@@ -95,7 +83,6 @@
           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
         </div>
       `;
-      // Quitar alerta luego de 3 segundos
       setTimeout(() => {
         const alertNode = alertContainer.querySelector('.alert');
         if (alertNode) {
@@ -108,8 +95,16 @@
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
+      const cliente_id = localStorage.getItem('cliente_id');
+
+      if (!cliente_id) {
+        mostrarAlerta('No se encontró tu sesión. Por favor, inicia sesión antes de agendar.');
+        return;
+      }
+
       const formData = new FormData(form);
       const datos = Object.fromEntries(formData.entries());
+      datos.cliente_id = cliente_id;
 
       const respuesta = await fetch('/api/citas/agendar', {
         method: 'POST',
@@ -120,7 +115,7 @@
       const resultado = await respuesta.json();
 
       if (respuesta.ok) {
-        window.location.href = '/ver-citas'; // Redirige automáticamente
+        window.location.href = '/ver-citas';
       } else {
         mostrarAlerta('Error al agendar: ' + (resultado.error || 'Intente nuevamente'));
       }

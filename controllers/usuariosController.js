@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcryptjs'); // <--- AÑADIDO: Importamos bcryptjs
 const pool = require('../config/db');
 
 // ==============================
@@ -16,20 +15,16 @@ router.post('/login', async (req, res) => {
 
     const [rows] = await pool.query('SELECT * FROM usuarios WHERE correo = ?', [correo]);
     if (rows.length === 0) {
-      // Por seguridad, es mejor no decir "Usuario no encontrado".
-      return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+      return res.status(401).json({ error: 'Usuario no encontrado' });
     }
 
     const usuario = rows[0];
 
-    // **CORRECCIÓN:** Usamos bcrypt.compare para comparar la contraseña hasheada
-    const contrasenaValida = await bcrypt.compare(contraseña, usuario.contraseña);
-
-    if (!contrasenaValida) {
+    if (usuario.contraseña !== contraseña) {
       return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
     }
 
-    // Login exitoso
+    // Sesión simple: podrías usar JWT o sesiones reales si deseas
     res.json({
       mensaje: 'Inicio de sesión exitoso',
       usuario: {
@@ -61,13 +56,9 @@ router.post('/registro', async (req, res) => {
       return res.status(409).json({ error: 'Correo ya registrado' });
     }
 
-    // **CORRECCIÓN:** Hasheamos la contraseña antes de guardarla
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(contraseña, salt);
-
     const [resultado] = await pool.query(
       'INSERT INTO usuarios (nombre, correo, contraseña, rol) VALUES (?, ?, ?, ?)',
-      [nombre, correo, hashedPassword, 'cliente'] // Guardamos la contraseña hasheada
+      [nombre, correo, contraseña, 'cliente']
     );
 
     res.status(201).json({ mensaje: 'Usuario registrado correctamente', id: resultado.insertId });
