@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Iniciar Sesión | BarberApp</title>
+  <title>Agendar Cita | BarberApp</title>
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
     rel="stylesheet"
@@ -11,45 +11,81 @@
 </head>
 <body>
   <header class="bg-dark text-white p-3">
-    <h1 class="text-center">Iniciar Sesión</h1>
+    <h1 class="text-center">Agendar Cita</h1>
   </header>
 
   <main class="container mt-4">
+    <!-- Contenedor para mostrar alertas -->
     <div id="alert-container"></div>
 
-    <form id="formLogin" novalidate>
+    <form id="formCita" novalidate>
       <div class="mb-3">
-        <label for="correo" class="form-label">Correo electrónico</label>
+        <label for="nombre" class="form-label">Nombre completo</label>
         <input
-          type="email"
+          type="text"
           class="form-control"
-          id="correo"
-          name="correo"
+          id="nombre"
+          name="nombre"
           required
-          placeholder="correo@ejemplo.com"
+          placeholder="Tu nombre completo"
         />
       </div>
 
       <div class="mb-3">
-        <label for="contraseña" class="form-label">Contraseña</label>
+        <label for="fecha" class="form-label">Fecha</label>
         <input
-          type="password"
+          type="date"
           class="form-control"
-          id="contraseña"
-          name="contraseña"
+          id="fecha"
+          name="fecha"
           required
-          placeholder="Tu contraseña"
         />
       </div>
 
-      <button type="submit" class="btn btn-primary w-100">Ingresar</button>
+      <div class="mb-3">
+        <label for="hora" class="form-label">Hora</label>
+        <input
+          type="time"
+          class="form-control"
+          id="hora"
+          name="hora"
+          required
+        />
+      </div>
+
+      <div class="mb-3">
+        <label for="servicio" class="form-label">Servicio</label>
+        <select
+          class="form-select"
+          id="servicio"
+          name="servicio"
+          required
+        >
+          <option value="">Selecciona un servicio</option>
+          <option value="Corte de cabello">Corte de cabello</option>
+          <option value="Barba">Barba</option>
+          <option value="Paquete Corte + Barba">Paquete Corte + Barba</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label for="barbero" class="form-label">Barbero</label>
+        <input
+          type="text"
+          class="form-control"
+          id="barbero"
+          name="barbero"
+          required
+          placeholder="Nombre del barbero"
+        />
+      </div>
+
+      <button type="submit" class="btn btn-primary">Agendar Cita</button>
     </form>
   </main>
 
   <script>
-    console.log('Script cargado correctamente');
-
-    const form = document.getElementById('formLogin');
+    const form = document.querySelector('#formCita');
     const alertContainer = document.getElementById('alert-container');
 
     function mostrarAlerta(mensaje, tipo = 'danger') {
@@ -60,61 +96,218 @@
         </div>
       `;
       setTimeout(() => {
-        const alerta = alertContainer.querySelector('.alert');
-        if (alerta) alerta.classList.remove('show');
+        const alertNode = alertContainer.querySelector('.alert');
+        if (alertNode) {
+          alertNode.classList.remove('show');
+          alertNode.classList.add('hide');
+        }
       }, 3000);
     }
 
     form.addEventListener('submit', async (e) => {
-      console.log('Submit capturado');
       e.preventDefault();
 
       const formData = new FormData(form);
       const datos = Object.fromEntries(formData.entries());
-      console.log('Datos del formulario:', datos);
 
-      try {
-        const respuesta = await fetch('/api/usuarios/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(datos),
-        });
+      const respuesta = await fetch('/api/citas/agendar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datos)
+      });
 
-        const resultado = await respuesta.json();
-        console.log('Respuesta del login:', resultado);
+      const resultado = await respuesta.json();
 
-        if (respuesta.ok) {
-          mostrarAlerta('Inicio de sesión exitoso. Redirigiendo...', 'success');
-
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 1500);
-
-          // Si quieres mantener la redirección por rol, comentas o modificas esta línea
-          /*
-          setTimeout(() => {
-            if (resultado.usuario) {
-              if (resultado.usuario.rol === 'admin') {
-                window.location.href = '/';
-              } else if (resultado.usuario.rol === 'cliente') {
-                window.location.href = '/agendar';
-              } else {
-                mostrarAlerta('Rol no reconocido.');
-              }
-            }
-          }, 1500);
-          */
-        } else {
-          mostrarAlerta(resultado.error || 'Usuario o contraseña incorrectos');
-        }
-      } catch (error) {
-        mostrarAlerta('Error en la comunicación con el servidor');
-        console.error(error);
+      if (respuesta.ok) {
+        window.location.href = '/ver-citas'; // Redirige a ver-citas al agendar
+      } else {
+        mostrarAlerta('Error al agendar: ' + (resultado.error || 'Intente nuevamente'));
       }
     });
   </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+  ></script>
+
+  <!-- ====== Código agregado: Chat bonito con opciones rápidas ====== -->
+
+  <!-- Botón flotante del chat -->
+  <button
+    id="chatBoton"
+    class="btn btn-primary rounded-circle shadow position-fixed"
+    style="bottom: 20px; right: 20px; z-index: 1050; display: none;"
+    data-bs-toggle="modal"
+    data-bs-target="#chatModal"
+  >
+    💬
+  </button>
+
+  <!-- Modal para chat -->
+  <div
+    class="modal fade"
+    id="chatModal"
+    tabindex="-1"
+    aria-labelledby="chatModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-dialog-scrollable modal-sm">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="chatModalLabel">Chat en Vivo</h5>
+          <button
+            type="button"
+            class="btn-close btn-close-white"
+            data-bs-dismiss="modal"
+            aria-label="Cerrar"
+          ></button>
+        </div>
+        <div
+          class="modal-body"
+          id="chat-box"
+          style="height: 320px; overflow-y: auto; background: #f1f3f5; padding: 10px; border-radius: 5px;"
+        ></div>
+        <div class="modal-footer p-2">
+          <form id="formularioChat" class="w-100 d-flex">
+            <input
+              id="inputChat"
+              type="text"
+              class="form-control me-2"
+              placeholder="Escribe tu mensaje..."
+              autocomplete="off"
+              required
+            />
+            <button type="submit" class="btn btn-primary">Enviar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* Burbuja mensaje usuario */
+    .mensaje-usuario {
+      background-color: #0d6efd;
+      color: white;
+      text-align: right;
+      padding: 8px 12px;
+      border-radius: 15px 15px 0 15px;
+      margin-bottom: 8px;
+      max-width: 75%;
+      margin-left: auto;
+    }
+    /* Burbuja mensaje bot */
+    .mensaje-bot {
+      background-color: #e9ecef;
+      color: #212529;
+      text-align: left;
+      padding: 8px 12px;
+      border-radius: 15px 15px 15px 0;
+      margin-bottom: 8px;
+      max-width: 75%;
+    }
+    /* Botones de opciones rápidas */
+    .opcion-rapida {
+      background-color: #0d6efd;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      padding: 5px 15px;
+      margin: 3px 5px 3px 0;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .opcion-rapida:hover {
+      background-color: #084298;
+    }
+  </style>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const chatBox = document.getElementById('chat-box');
+    const formularioChat = document.getElementById('formularioChat');
+    const inputChat = document.getElementById('inputChat');
+
+    // Mostrar botón solo para rol cliente
+    fetch('/api/usuarios/sesion')
+      .then(res => res.json())
+      .then(data => {
+        if (data.usuario && data.usuario.rol === 'cliente') {
+          document.getElementById('chatBoton').style.display = 'block';
+        }
+      });
+
+    // Añade mensaje en chat
+    function agregarMensaje(texto, clase, html = false) {
+      const div = document.createElement('div');
+      div.className = clase;
+      if (html) {
+        div.innerHTML = texto;
+      } else {
+        div.textContent = texto;
+      }
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // Función para mostrar opciones rápidas
+    function mostrarOpciones(opciones) {
+      // Borra opciones anteriores si hay
+      const existentes = chatBox.querySelectorAll('.opcion-rapida');
+      existentes.forEach(e => e.remove());
+
+      opciones.forEach(opcion => {
+        const btn = document.createElement('button');
+        btn.className = 'opcion-rapida';
+        btn.textContent = opcion;
+        btn.onclick = () => {
+          agregarMensaje('🧑 Tú: ' + opcion, 'mensaje-usuario');
+          socket.emit('mensaje_usuario', opcion);
+          eliminarOpciones();
+        };
+        chatBox.appendChild(btn);
+      });
+
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function eliminarOpciones() {
+      const existentes = chatBox.querySelectorAll('.opcion-rapida');
+      existentes.forEach(e => e.remove());
+    }
+
+    formularioChat.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const mensaje = inputChat.value.trim();
+      if (mensaje === '') return;
+      agregarMensaje('🧑 Tú: ' + mensaje, 'mensaje-usuario');
+      socket.emit('mensaje_usuario', mensaje);
+      inputChat.value = '';
+      eliminarOpciones();
+    });
+
+    // Cuando llega mensaje del bot
+    socket.on('mensaje_bot', (msg) => {
+      agregarMensaje('🤖 Bot: ' + msg, 'mensaje-bot');
+
+      // Ejemplo: si el bot pregunta algo, muestra opciones
+      if (msg.toLowerCase().includes('servicio')) {
+        mostrarOpciones(['Corte de cabello', 'Barba', 'Paquete Corte + Barba']);
+      }
+      if (msg.toLowerCase().includes('horario')) {
+        mostrarOpciones(['Mañana', 'Tarde', 'Noche']);
+      }
+    });
+
+    // Mensaje de bienvenida automático cuando se abre el chat
+    document.getElementById('chatBoton').addEventListener('click', () => {
+      if (chatBox.innerHTML.trim() === '') {
+        agregarMensaje('🤖 Bot: ¡Hola! ¿En qué puedo ayudarte? Puedes preguntar por servicios o horarios.', 'mensaje-bot');
+        mostrarOpciones(['Servicios', 'Horarios', 'Contacto']);
+      }
+    });
+  </script>
 </body>
 </html>
 

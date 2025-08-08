@@ -80,5 +80,14 @@ router.get('/sesion-activa', (req, res) => {
   }
 });
 
+// Ruta para que el frontend sepa qué usuario está logueado y su rol
+router.get('/sesion', (req, res) => {
+  if (req.session.usuario) {
+    res.json({ usuario: req.session.usuario });
+  } else {
+    res.json({ usuario: null });
+  }
+});
+
 module.exports = router;
 

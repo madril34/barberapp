@@ -115,7 +115,8 @@
       const mensaje = document.getElementById('mensaje');
 
       try {
-        const response = await fetch('/api/citas/todas');
+        // Cambiado para traer solo las citas del usuario logueado
+        const response = await fetch('/api/citas/mis-citas');
         if (!response.ok) throw new Error('Error al obtener citas');
         const citas = await response.json();
 
@@ -175,4 +176,3 @@
   </script>
 </body>
 </html>
-

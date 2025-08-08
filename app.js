@@ -1,7 +1,12 @@
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
+const http = require('http');
+const { Server } = require('socket.io');
+
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 const PORT = 3000;
 
 // Middleware para parsear JSON y urlencoded
@@ -10,7 +15,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Configurar sesiones
 app.use(session({
-  secret: 'clave-secreta-super-segura', 
+  secret: 'clave-secreta-super-segura',
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -46,7 +51,6 @@ app.get('/', (req, res) => {
       return res.sendFile(path.join(__dirname, 'views', 'agendar.html'));
     }
   }
-  // Si no hay sesión, mostrar la página de inicio o login
   res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
 
@@ -59,7 +63,16 @@ app.get('/agendar', verificarSesion, (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'agendar.html'));
 });
 
-// Otras rutas públicas
+app.get('/ver-citas', verificarSesion, (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'ver-citas.html'));
+});
+
+// ✅ Ruta protegida del chat desde views
+app.get('/chat', verificarSesion, (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'chat.html'));
+});
+
+// Rutas públicas
 app.get('/servicios', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'servicios.html'));
 });
@@ -83,7 +96,43 @@ const usuarioRoutes = require('./routes/usuarioRoutes');
 app.use('/api/citas', citaRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 
+// Lógica del chat con Socket.IO mejorada para respuestas guiadas
+io.on('connection', (socket) => {
+  console.log('🟢 Usuario conectado al chat');
+
+  socket.on('mensaje_usuario', (msg) => {
+    const texto = msg.toLowerCase();
+    console.log('Mensaje del usuario:', texto);
+
+    let respuesta = 'Disculpa, no entendí eso. ¿Puedes intentar con otra cosa?';
+
+    if (texto.includes('hola')) {
+      respuesta = '¡Hola! ¿Quieres saber sobre nuestros servicios o horarios?';
+    } else if (
+      texto.includes('servicios') ||
+      ['corte de cabello', 'barba', 'paquete'].some((s) => texto.includes(s))
+    ) {
+      respuesta =
+        'Ofrecemos Corte de cabello, Barba y Paquete Corte + Barba. ¿Quieres saber los horarios disponibles?';
+    } else if (
+      texto.includes('horario') ||
+      ['mañana', 'tarde', 'noche'].some((h) => texto.includes(h))
+    ) {
+      respuesta = 'Nuestros horarios son de 9:00 AM a 6:00 PM de lunes a sábado.';
+    } else if (texto.includes('contacto')) {
+      respuesta =
+        'Puedes llamarnos al 1234-5678 o escribirnos al correo contacto@barberapp.com';
+    }
+
+    socket.emit('mensaje_bot', respuesta);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('🔴 Usuario salió del chat');
+  });
+});
+
 // Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`Servidor BarberApp corriendo en: http://localhost:${PORT}`);
+server.listen(PORT, () => {
+  console.log(`Servidor BarberApp + Chat en: http://localhost:${PORT}`);
 });
